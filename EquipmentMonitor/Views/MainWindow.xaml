@@ -1,0 +1,352 @@
+<Window x:Class="EquipmentMonitor.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="clr-namespace:EquipmentMonitor.Converters"
+        xmlns:vm="clr-namespace:EquipmentMonitor.ViewModels"
+        Title="Панель мониторинга оборудования"
+        Height="600" Width="1100"
+        MinHeight="400" MinWidth="800"
+        WindowStartupLocation="CenterScreen"
+        Icon="/icon.ico">
+
+    <Window.Resources>
+        <conv:NullToVisibilityConverter x:Key="NullToVisibility"/>
+        <conv:EnumDisplayConverter x:Key="EnumDisplay"/>
+        <conv:CategoryToIconConverter x:Key="CategoryToIcon"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- Menu bar -->
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="Файл">
+                <MenuItem Header="Импорт">
+                    <MenuItem Header="Из JSON..." Command="{Binding ImportJsonCommand}"/>
+                    <MenuItem Header="Из Excel (XLSX)..." Command="{Binding ImportXlsxCommand}"/>
+                    <MenuItem Header="Из базы данных..." Command="{Binding ImportDbCommand}"/>
+                </MenuItem>
+                <MenuItem Header="Экспорт">
+                    <MenuItem Header="В JSON..." Command="{Binding ExportJsonCommand}"/>
+                    <MenuItem Header="В Excel (XLSX)..." Command="{Binding ExportXlsxCommand}"/>
+                    <MenuItem Header="В базу данных..." Command="{Binding ExportDbCommand}"/>
+                    <Separator/>
+                    <MenuItem Header="Только выбранные" IsEnabled="{Binding HasSelection}">
+                        <MenuItem Header="В JSON..." Command="{Binding ExportJsonSelectedCommand}"/>
+                        <MenuItem Header="В Excel (XLSX)..." Command="{Binding ExportXlsxSelectedCommand}"/>
+                        <MenuItem Header="В базу данных..." Command="{Binding ExportDbSelectedCommand}"/>
+                    </MenuItem>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Печать..." Command="{Binding PrintCommand}" InputGestureText="Ctrl+P"/>
+                <Separator/>
+                <MenuItem Header="Выход" Command="{Binding ExitCommand}"/>
+            </MenuItem>
+            <MenuItem Header="База данных">
+                <MenuItem Header="Pull (загрузить из БД)" Command="{Binding PullCommand}"/>
+                <MenuItem Header="Commit (сохранить в staging)" Command="{Binding CommitCommand}"/>
+                <MenuItem Header="Push (полный ETL)" Command="{Binding PushCommand}"/>
+            </MenuItem>
+            <MenuItem Header="Вид">
+                <MenuItem Header="Список" IsCheckable="True"
+                          IsChecked="{Binding IsListView, Mode=OneWay}"
+                          Command="{Binding SetViewModeCommand}" CommandParameter="List"/>
+                <MenuItem Header="Значки" IsCheckable="True"
+                          IsChecked="{Binding IsIconsView, Mode=OneWay}"
+                          Command="{Binding SetViewModeCommand}" CommandParameter="Icons"/>
+                <MenuItem Header="Колонки" IsCheckable="True"
+                          IsChecked="{Binding IsColumnsView, Mode=OneWay}"
+                          Command="{Binding SetViewModeCommand}" CommandParameter="Columns"/>
+                <Separator/>
+                <MenuItem x:Name="SortGroupMenu">
+                    <MenuItem.Style>
+                        <Style TargetType="MenuItem">
+                            <Setter Property="Header" Value="Сортировать"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding UseGroups}" Value="True">
+                                    <Setter Property="Header" Value="Группировать"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </MenuItem.Style>
+                    <MenuItem Header="По категории"
+                              Command="{Binding SetSortFieldCommand}" CommandParameter="Category"/>
+                    <MenuItem Header="По дате установки"
+                              Command="{Binding SetSortFieldCommand}" CommandParameter="InstallDate"/>
+                    <MenuItem Header="По названию"
+                              Command="{Binding SetSortFieldCommand}" CommandParameter="Name"/>
+                    <MenuItem Header="По статусу"
+                              Command="{Binding SetSortFieldCommand}" CommandParameter="Status"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Использовать группы" IsCheckable="True"
+                          IsChecked="{Binding UseGroups}"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- Single toolbar with all filters -->
+        <ToolBar DockPanel.Dock="Top" Margin="4">
+            <Button Content="Добавить" Command="{Binding AddDeviceCommand}" Padding="8,4"/>
+            <Button Content="Удалить" Command="{Binding DeleteDeviceCommand}" Padding="8,4"/>
+            <Separator/>
+            <TextBlock Text="Поиск:" VerticalAlignment="Center" Margin="4,0"/>
+            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Width="130" VerticalAlignment="Center"/>
+            <Separator/>
+            <TextBlock Text="Категория:" VerticalAlignment="Center" Margin="4,0"/>
+            <ComboBox ItemsSource="{Binding CategoryFilterItems}"
+                      SelectedValue="{Binding SelectedCategoryFilter}"
+                      SelectedValuePath="Value"
+                      DisplayMemberPath="DisplayName"
+                      Width="110" VerticalAlignment="Center"/>
+            <Separator/>
+            <TextBlock Text="Дата от:" VerticalAlignment="Center" Margin="4,0"/>
+            <DatePicker SelectedDate="{Binding DateFrom}" Width="125" VerticalAlignment="Center"/>
+            <TextBlock Text="до:" VerticalAlignment="Center" Margin="4,0"/>
+            <DatePicker SelectedDate="{Binding DateTo}"
+                        DisplayDateStart="{Binding DateFrom}"
+                        Width="125" VerticalAlignment="Center"/>
+            <Separator/>
+            <TextBlock Text="Статус:" VerticalAlignment="Center" Margin="4,0"/>
+            <ComboBox ItemsSource="{Binding StatusFilterItems}"
+                      SelectedValue="{Binding SelectedStatusFilter}"
+                      SelectedValuePath="Value"
+                      DisplayMemberPath="DisplayName"
+                      Width="110" VerticalAlignment="Center"/>
+            <Separator/>
+            <Button Content="Сбросить" Command="{Binding ClearFilterCommand}" Padding="8,4"/>
+            <Separator/>
+        </ToolBar>
+
+        <!-- Git Actions Toolbar -->
+        <ToolBar DockPanel.Dock="Top" Margin="4,0,4,4">
+            <Button Content="&#x2B07; Pull" Command="{Binding PullCommand}" Padding="8,4" ToolTip="Загрузить данные из БД"/>
+            <Separator/>
+            <Button Content="&#x2714; Commit" Command="{Binding CommitCommand}" Padding="8,4" ToolTip="Сохранить в staging + ODS"/>
+            <Separator/>
+            <Button Content="&#x2B06; Push" Command="{Binding PushCommand}" Padding="8,4" ToolTip="Полный ETL-цикл"/>
+        </ToolBar>
+
+        <!-- Status bar -->
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusBarText}" />
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock>
+                    <Run Text="{Binding UserDisplayName, Mode=OneWay}"/>
+                    <Run Text=" | "/>
+                    <Run Text="{Binding UserRole, Mode=OneWay}"/>
+                </TextBlock>
+            </StatusBarItem>
+        </StatusBar>
+
+        <!-- Clipboard notification -->
+        <Border x:Name="ClipboardNotification" DockPanel.Dock="Bottom"
+                Background="#FF4CAF50" Visibility="Collapsed" Padding="8,4">
+            <TextBlock Text="Скопировано в буфер обмена" Foreground="White"
+                       HorizontalAlignment="Center" FontWeight="SemiBold"/>
+        </Border>
+
+        <!-- Main content -->
+        <Grid Margin="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="250"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="350" MinWidth="280"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Device list - List View mode -->
+            <ListView Grid.Column="0" x:Name="DeviceListView"
+                      ItemsSource="{Binding DevicesView}"
+                      SelectedItem="{Binding SelectedDevice}"
+                      SelectionMode="Extended"
+                      HorizontalContentAlignment="Stretch"
+                      SelectionChanged="DeviceListView_SelectionChanged"
+                      MouseRightButtonUp="DeviceListView_RightClick"
+                      Visibility="{Binding IsListView, Converter={StaticResource BoolToVis}}">
+                <ListView.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"
+                                           FontWeight="Bold" FontSize="14"
+                                           Background="#DDDDDD" Padding="6,4"
+                                           Margin="0,4,0,2"/>
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ListView.GroupStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="4,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="S/N: "/><Run Text="{Binding SerialNumber, Mode=OneWay}"/>
+                                </TextBlock>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="Установлено: "/><Run Text="{Binding InstallDate, StringFormat=dd.MM.yyyy, Mode=OneWay}"/>
+                                </TextBlock>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding StatusDisplayName}"
+                                       VerticalAlignment="Center" Margin="8,0,0,0"
+                                       FontStyle="Italic"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <!-- Device list - Icons View mode -->
+            <ListView Grid.Column="0" x:Name="DeviceIconsView"
+                      ItemsSource="{Binding DevicesView}"
+                      SelectedItem="{Binding SelectedDevice}"
+                      SelectionMode="Extended"
+                      SelectionChanged="DeviceListView_SelectionChanged"
+                      MouseRightButtonUp="DeviceListView_RightClick"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      Visibility="{Binding IsIconsView, Converter={StaticResource BoolToVis}}">
+                <ListView.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"
+                                           FontWeight="Bold" FontSize="14"
+                                           Background="#DDDDDD" Padding="6,4"
+                                           Margin="0,4,0,2"/>
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ListView.GroupStyle>
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4"
+                                Padding="8" Margin="4" Width="150">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding Category, Converter={StaticResource CategoryToIcon}}"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                           TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding SerialNumber}" Foreground="Gray"
+                                           FontSize="10" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding StatusDisplayName}" FontStyle="Italic"
+                                           FontSize="11" TextAlignment="Center" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <!-- Device list - Columns View mode (GridView) -->
+            <ListView Grid.Column="0" x:Name="DeviceColumnsView"
+                      ItemsSource="{Binding DevicesView}"
+                      SelectedItem="{Binding SelectedDevice}"
+                      SelectionMode="Extended"
+                      SelectionChanged="DeviceListView_SelectionChanged"
+                      MouseRightButtonUp="DeviceListView_RightClick"
+                      GridViewColumnHeader.Click="GridViewColumnHeader_Click"
+                      Visibility="{Binding IsColumnsView, Converter={StaticResource BoolToVis}}">
+                <ListView.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"
+                                           FontWeight="Bold" FontSize="14"
+                                           Background="#DDDDDD" Padding="6,4"
+                                           Margin="0,4,0,2"/>
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ListView.GroupStyle>
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Название" Width="200"
+                                        DisplayMemberBinding="{Binding Name}"/>
+                        <GridViewColumn Header="Серийный номер" Width="150"
+                                        DisplayMemberBinding="{Binding SerialNumber}"/>
+                        <GridViewColumn Header="Категория" Width="100"
+                                        DisplayMemberBinding="{Binding CategoryDisplayName}"/>
+                        <GridViewColumn Header="Дата установки" Width="110"
+                                        DisplayMemberBinding="{Binding InstallDate, StringFormat=dd.MM.yyyy}"/>
+                        <GridViewColumn Header="Статус" Width="100"
+                                        DisplayMemberBinding="{Binding StatusDisplayName}"/>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="LightGray"/>
+
+            <!-- Edit panel -->
+            <ScrollViewer Grid.Column="2"
+                          VerticalScrollBarVisibility="Auto"
+                          Visibility="{Binding SelectedDevice, Converter={StaticResource NullToVisibility}}">
+                <StackPanel Margin="12">
+                    <TextBlock Text="Редактирование" FontWeight="Bold" FontSize="16" Margin="0,0,0,12"/>
+
+                    <TextBlock Text="Категория:" Margin="0,0,0,4"/>
+                    <ComboBox ItemsSource="{Binding CategoryValues}"
+                              SelectedItem="{Binding EditCategory}"
+                              Margin="0,0,0,8">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource EnumDisplay}}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <TextBlock Text="Название:" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"/>
+
+                    <TextBlock Text="Серийный номер:" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding EditSerialNumber, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"/>
+
+                    <TextBlock Text="Дата установки:" Margin="0,0,0,4"/>
+                    <DatePicker SelectedDate="{Binding EditInstallDate}" Margin="0,0,0,8"/>
+
+                    <TextBlock Text="Статус:" Margin="0,0,0,4"/>
+                    <ComboBox ItemsSource="{Binding StatusValues}"
+                              SelectedItem="{Binding EditStatus}"
+                              Margin="0,0,0,16">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource EnumDisplay}}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <Button Content="Сохранить изменения"
+                            Command="{Binding SaveDeviceCommand}"
+                            Padding="12,6"
+                            HorizontalAlignment="Left"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Placeholder when nothing selected -->
+            <TextBlock Grid.Column="2"
+                       Text="Выберите устройство для редактирования"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Foreground="Gray" FontSize="13">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedDevice}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+    </DockPanel>
+</Window>

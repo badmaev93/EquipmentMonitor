@@ -1,0 +1,107 @@
+[
+  {
+    "Category": "Server",
+    "Name": "Сервер БД Основной",
+    "SerialNumber": "SRV-2024-001",
+    "InstallDate": "2023-03-15T00:00:00",
+    "Status": "Working"
+  },
+  {
+    "Category": "Server",
+    "Name": "Сервер приложений",
+    "SerialNumber": "SRV-2024-002",
+    "InstallDate": "2023-06-20T00:00:00",
+    "Status": "Working"
+  },
+  {
+    "Category": "Server",
+    "Name": "Файловый сервер",
+    "SerialNumber": "SRV-2023-010",
+    "InstallDate": "2021-11-01T00:00:00",
+    "Status": "Broken"
+  },
+  {
+    "Category": "Server",
+    "Name": "Сервер резервного копирования",
+    "SerialNumber": "SRV-2022-005",
+    "InstallDate": "2022-01-10T00:00:00",
+    "Status": "Working"
+  },
+  {
+    "Category": "Server",
+    "Name": "Тестовый сервер",
+    "SerialNumber": "SRV-2021-003",
+    "InstallDate": "2020-09-05T00:00:00",
+    "Status": "Decommissioned"
+  },
+  {
+    "Category": "PC",
+    "Name": "Рабочая станция инженера",
+    "SerialNumber": "PC-2024-101",
+    "InstallDate": "2024-01-12T00:00:00",
+    "Status": "Working"
+  },
+  {
+    "Category": "PC",
+    "Name": "Компьютер бухгалтерии",
+    "SerialNumber": "PC-2023-055",
+    "InstallDate": "2023-04-18T00:00:00",
+    "Status": "Working"
+  },
+  {
+    "Category": "PC",
+    "Name": "Компьютер отдела кадров",
+    "SerialNumber": "PC-2023-056",
+    "InstallDate": "2023-04-18T00:00:00",
+    "Status": "Broken"
+  },
+  {
+    "Category": "PC",
+    "Name": "Ноутбук руководителя",
+    "SerialNumber": "PC-2024-200",
+    "InstallDate": "2024-06-01T00:00:00",
+    "Status": "Working"
+  },
+  {
+    "Category": "PC",
+    "Name": "Компьютер склада",
+    "SerialNumber": "PC-2022-033",
+    "InstallDate": "2022-08-22T00:00:00",
+    "Status": "Decommissioned"
+  },
+  {
+    "Category": "PC",
+    "Name": "Рабочая станция дизайнера",
+    "SerialNumber": "PC-2024-102",
+    "InstallDate": "2024-02-14T00:00:00",
+    "Status": "Working"
+  },
+  {
+    "Category": "Printer",
+    "Name": "Принтер HP LaserJet 3-й этаж",
+    "SerialNumber": "PRN-2023-007",
+    "InstallDate": "2023-02-28T00:00:00",
+    "Status": "Working"
+  },
+  {
+    "Category": "Printer",
+    "Name": "МФУ Canon приёмная",
+    "SerialNumber": "PRN-2024-012",
+    "InstallDate": "2024-03-10T00:00:00",
+    "Status": "Working"
+  },
+  {
+    "Category": "Printer",
+    "Name": "Принтер Epson склад",
+    "SerialNumber": "PRN-2021-002",
+    "InstallDate": "2021-05-15T00:00:00",
+    "Status": "Broken"
+  },
+  {
+    "Category": "Printer",
+    "Name": "Принтер Samsung 2-й этаж",
+    "SerialNumber": "PRN-2020-001",
+    "InstallDate": "2020-03-20T00:00:00",
+    "Status": "Decommissioned"
+  }
+]
